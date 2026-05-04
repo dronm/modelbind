@@ -9,6 +9,8 @@ import (
 	"github.com/dronm/modelbind/types"
 )
 
+// modelPointerValue returns the concrete struct type and value for a non-nil
+// pointer to a struct.
 func modelPointerValue(model any, funcName string) (reflect.Type, reflect.Value, error) {
 	modelVal := reflect.ValueOf(model)
 	if !modelVal.IsValid() || modelVal.Kind() != reflect.Pointer || modelVal.IsNil() {
@@ -34,6 +36,8 @@ func modelPointerValue(model any, funcName string) (reflect.Type, reflect.Value,
 	return modelType, modelVal, nil
 }
 
+// modelStructOrPointerValue returns the concrete struct type and value for a
+// struct value or a non-nil pointer to a struct.
 func modelStructOrPointerValue(model any, funcName string) (reflect.Type, reflect.Value, error) {
 	modelVal := reflect.ValueOf(model)
 	if !modelVal.IsValid() {
@@ -72,6 +76,8 @@ func modelStructOrPointerValue(model any, funcName string) (reflect.Type, reflec
 	return modelType, modelVal, nil
 }
 
+// ModelToDBFilters converts annotated model fields into DB filters using the
+// provided SQL operator, join mode, and table name.
 func ModelToDBFilters(model any, filters types.DBFilters, operator types.SQLFilterOperator, join types.FilterJoin, table string) error {
 	const funcName = "ModelToDBFilters"
 
@@ -118,6 +124,8 @@ func BindUpdateModel(keyModel any, dbUpdate types.DBUpdater) error {
 	return bindUpdateModel("BindUpdateModel", keyModel, dbUpdate)
 }
 
+// bindUpdateModel validates the update model, binds key filters, and adds all
+// set update fields to dbUpdate.
 func bindUpdateModel(funcName string, keyModel any, dbUpdate types.DBUpdater) error {
 	if err := ModelToDBFilters(keyModel, dbUpdate.Filter(), types.SQLFilterOperatorEq, types.SQLFilterJoinAnd, ""); err != nil {
 		return err
@@ -230,6 +238,8 @@ func BindCollectionSelectModel(dbSelect types.DBSelecter, params CollectionParam
 	return bindCollectionSelectModel("BindCollectionSelectModel", dbSelect, params)
 }
 
+// BindCollectionSelectModel parses collection parameters and binds select
+// fields, aggregate fields, filters, sorters, and limit to dbSelect.
 func bindCollectionSelectModel(funcName string, dbSelect types.DBSelecter, params CollectionParams) error {
 	if err := ParseFilterParams(dbSelect.Model(), dbSelect.Filter(), params, ""); err != nil {
 		return err
@@ -282,6 +292,8 @@ func bindCollectionSelectModel(funcName string, dbSelect types.DBSelecter, param
 	return bindSelectModel(funcName, dbSelect.(types.PrepareModel), dbSelect.Model())
 }
 
+// bindSelectModel binds annotated model fields as scan destinations for a
+// select-like query builder.
 func bindSelectModel(funcName string, selectModel types.PrepareModel, model any) error {
 	modelType, modelVal, err := modelPointerValue(model, funcName)
 	if err != nil {
@@ -308,6 +320,8 @@ func BindDetailSelectModel(keyModel any, dbSelect types.DBDetailSelecter) error 
 	return bindDetailSelectModel("BindDetailSelectModel", keyModel, dbSelect)
 }
 
+// BindDetailSelectModel binds key filters and scan destinations for a detail
+// select query.
 func bindDetailSelectModel(funcName string, keyModel any, dbSelect types.DBDetailSelecter) error {
 	filters := dbSelect.Filter()
 	if err := ModelToDBFilters(keyModel, filters, types.SQLFilterOperatorEq, types.SQLFilterJoinAnd, ""); err != nil {
@@ -332,6 +346,8 @@ func BindInsertModel(dbInsert types.DBInserter) error {
 	return bindInsertModel("BindInsertModel", dbInsert)
 }
 
+// bindInsertModel validates the insert model, adds present insert fields, and
+// registers server-calculated fields as return scan destinations.
 func bindInsertModel(funcName string, dbInsert types.DBInserter) error {
 	model := dbInsert.Model()
 	modelType, modelVal, err := modelPointerValue(model, funcName)

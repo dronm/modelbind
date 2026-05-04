@@ -18,9 +18,7 @@ import (
 
 // DecodeJSONInput decodes an incoming HTTP request into a model and tracks
 // absent fields.
-//
-// The name is kept intentionally broad for compatibility with the package API
-// discussed during design: JSON requests are decoded from body, form requests
+// JSON requests are decoded from body, form requests
 // from form values, and requests without a form/json body from URL query values.
 func DecodeJSONInput[T any](r *http.Request) (ModelInput[T], error) {
 	return DecodeRequestInput[T](r)
@@ -272,7 +270,7 @@ func setFieldFromJSON(field reflect.Value, fieldMd metadata.FieldValidator, rawV
 	}
 
 	if field.Kind() == reflect.Pointer {
-		if field.Type().Elem().Kind() == reflect.Struct && field.Type().Elem() != reflect.TypeOf(time.Time{}) {
+		if field.Type().Elem().Kind() == reflect.Struct && field.Type().Elem() != reflect.TypeFor[time.Time]() {
 			newValue := reflect.New(field.Type().Elem())
 			if err := json.Unmarshal(rawValue, newValue.Interface()); err != nil {
 				return decodeValueError(funcName, fieldMd.ID(), string(rawValue))
@@ -509,7 +507,7 @@ func flattenFormValues(values []string) []string {
 	res := make([]string, 0, len(values))
 	for _, value := range values {
 		if strings.Contains(value, ",") {
-			for _, part := range strings.Split(value, ",") {
+			for part := range strings.SplitSeq(value, ",") {
 				res = append(res, strings.TrimSpace(part))
 			}
 			continue
@@ -530,11 +528,11 @@ func isFormNull(value string) bool {
 }
 
 func isTimeValue(field reflect.Value) bool {
-	return field.IsValid() && field.Type() == reflect.TypeOf(time.Time{})
+	return field.IsValid() && field.Type() == reflect.TypeFor[time.Time]()
 }
 
 func isTimePointerValue(field reflect.Value) bool {
-	return field.IsValid() && field.Kind() == reflect.Pointer && field.Type().Elem() == reflect.TypeOf(time.Time{})
+	return field.IsValid() && field.Kind() == reflect.Pointer && field.Type().Elem() == reflect.TypeFor[time.Time]()
 }
 
 func decodeValueError(funcName string, fieldID string, value string) error {

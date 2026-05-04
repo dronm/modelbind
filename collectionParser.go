@@ -9,6 +9,8 @@ import (
 	"github.com/dronm/modelbind/types"
 )
 
+// ParseLimitParams transfers offset/count values from CollectionParams
+// into the provided DBLimit builder.
 func ParseLimitParams(dbLimit types.DBLimit, params CollectionParams) error {
 	const funcName = "ParseLimitParams"
 
@@ -27,6 +29,9 @@ func ParseLimitParams(dbLimit types.DBLimit, params CollectionParams) error {
 	return nil
 }
 
+// ParseSorterParams validates sorter fields and directions from CollectionParams,
+// checks that referenced fields exist in the model metadata, sanitizes SQL field
+// expressions, and adds the resulting sort rules to the provided DBSorters builder.
 func ParseSorterParams(model types.DBModel, dbSorter types.DBSorters, params CollectionParams) error {
 	const funcName = "ParseSorterParams"
 
@@ -85,6 +90,10 @@ func ParseSorterParams(model types.DBModel, dbSorter types.DBSorters, params Col
 	return nil
 }
 
+// ParseFilterParams validates filter fields, values, operators, and joins from
+// CollectionParams, checks that referenced fields exist in the model metadata,
+// sanitizes SQL field expressions, and adds the resulting filters to the provided
+// DBFilters builder.
 func ParseFilterParams(model types.DBModel, dbFilter types.DBFilters, params CollectionParams, table string) error {
 	const funcName = "ParseFilterParams"
 
