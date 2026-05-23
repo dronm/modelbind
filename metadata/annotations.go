@@ -24,7 +24,7 @@ var FieldFilterAnnotationName = "f"
 
 // ValListSeparator is used as a separator between list values.
 // This variable must be set at startup.
-var ValListSeparator = "@@"
+var ValListSeparator = ","
 
 // All possible annotations.
 const (

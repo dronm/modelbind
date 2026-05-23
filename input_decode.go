@@ -16,6 +16,8 @@ import (
 	"github.com/dronm/modelbind/metadata"
 )
 
+var ParseFormMaxMemory int64 = 32 << 20
+
 // DecodeJSONInput decodes an incoming HTTP request into a model and tracks
 // absent fields.
 // JSON requests are decoded from body, form requests
@@ -49,7 +51,7 @@ func DecodeRequestInput[T any](r *http.Request) (ModelInput[T], error) {
 		return DecodeJSONBodyInput[T](r.Body)
 
 	case "application/x-www-form-urlencoded", "multipart/form-data":
-		if err := r.ParseMultipartForm(32 << 20); err != nil {
+		if err := r.ParseMultipartForm(ParseFormMaxMemory); err != nil {
 			if err := r.ParseForm(); err != nil {
 				return ModelInput[T]{}, NewMessageError(
 					MsgDecodeInvalidFieldValue,
