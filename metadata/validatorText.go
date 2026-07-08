@@ -93,8 +93,7 @@ func (f FieldTextMetadata) Validate(field reflect.Value) (bool, error) {
 		}
 	}
 
-	val, ok := field.Interface().(string)
-	if !ok {
+	if field.Kind() != reflect.String {
 		return true, NewMessageError(
 			MsgValidationCast,
 			map[string]any{
@@ -104,7 +103,7 @@ func (f FieldTextMetadata) Validate(field reflect.Value) (bool, error) {
 		)
 	}
 
-	return true, f.CheckValue(val)
+	return true, f.CheckValue(field.String())
 }
 
 // CheckValue does the actual validation of the given string value.

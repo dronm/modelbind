@@ -3,6 +3,7 @@ package metadata
 import (
 	"reflect"
 	"strings"
+	"time"
 )
 
 type FieldDataType byte
@@ -20,7 +21,6 @@ const (
 	FieldTypeArray  // slice
 	FieldTypeObjecT // struct
 )
-
 
 func ParseDateFieldType(fieldTypeName string) FieldDataType {
 	switch strings.ToLower(fieldTypeName) {
@@ -49,6 +49,48 @@ func ParseFieldType(fieldTypeName string) FieldDataType {
 	return FieldTypeUndefined
 }
 
+func ParseReflectFieldType(fieldType reflect.Type) FieldDataType {
+	if fieldType.Kind() == reflect.Pointer {
+		fieldType = fieldType.Elem()
+	}
+
+	if fieldType.Kind() == reflect.Slice || fieldType.Kind() == reflect.Array {
+		elemType := fieldType.Elem()
+		if elemType.Kind() == reflect.Pointer {
+			elemType = elemType.Elem()
+		}
+
+		switch elemType.Kind() {
+		case reflect.Bool,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+			reflect.Float32, reflect.Float64,
+			reflect.String:
+			return FieldTypeArray
+		}
+
+		return FieldTypeUndefined
+	}
+
+	if fieldType == reflect.TypeOf(time.Time{}) {
+		return FieldTypeDatetime
+	}
+
+	switch fieldType.Kind() {
+	case reflect.Bool:
+		return FieldTypeBool
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return FieldTypeInt
+	case reflect.Float32, reflect.Float64:
+		return FieldTypeFloat
+	case reflect.String:
+		return FieldTypeText
+	}
+
+	return FieldTypeUndefined
+}
+
 type FieldMetadata struct {
 	modelID    string // real structure ID
 	id         string // database field id, json/xml tag
@@ -58,6 +100,10 @@ type FieldMetadata struct {
 	primaryKey bool
 	srvCalc    bool // server calculated field, return to client on insert
 	// like auto inc for example
+}
+
+func NewFieldArrayMetadata(modelFieldID, id string) *FieldMetadata {
+	return &FieldMetadata{modelID: modelFieldID, id: id, dataType: FieldTypeArray}
 }
 
 func (f FieldMetadata) ModelID() string {

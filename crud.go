@@ -2,7 +2,6 @@
 package modelbind
 
 import (
-	"encoding/json"
 	"reflect"
 
 	"github.com/dronm/modelbind/metadata"
@@ -196,24 +195,13 @@ func bindUpdateModel(funcName string, keyModel any, dbUpdate types.DBUpdater) er
 			continue
 		}
 
-		if fieldMd.DataType() == metadata.FieldTypeUndefined {
-			b, err := json.Marshal(field.Interface())
-			if err != nil {
-				validationErr.Add(NewMessageError(
-					MsgJSONMarshalFailed,
-					map[string]any{
-						"Func":  funcName,
-						"Field": fieldID,
-						"Error": err.Error(),
-					},
-				))
-				continue
-			}
-
-			dbUpdate.AddField(fieldID, b)
-		} else {
-			dbUpdate.AddField(fieldID, field.Interface())
+		value, err := dbFieldValue(funcName, fieldID, field, fieldMd)
+		if err != nil {
+			validationErr.Add(err)
+			continue
 		}
+
+		dbUpdate.AddField(fieldID, value)
 	}
 
 	if validationErr.HasErrors() {
@@ -418,24 +406,13 @@ func bindInsertModel(funcName string, dbInsert types.DBInserter) error {
 			continue
 		}
 
-		if fieldMd.DataType() == metadata.FieldTypeUndefined {
-			b, err := json.Marshal(field.Interface())
-			if err != nil {
-				validationErr.Add(NewMessageError(
-					MsgJSONMarshalFailed,
-					map[string]any{
-						"Func":  funcName,
-						"Field": fieldID,
-						"Error": err.Error(),
-					},
-				))
-				continue
-			}
-
-			dbInsert.AddField(fieldID, b)
-		} else {
-			dbInsert.AddField(fieldID, field.Interface())
+		value, err := dbFieldValue(funcName, fieldID, field, fieldMd)
+		if err != nil {
+			validationErr.Add(err)
+			continue
 		}
+
+		dbInsert.AddField(fieldID, value)
 	}
 
 	if validationErr.HasErrors() {

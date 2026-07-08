@@ -92,7 +92,10 @@ func NewModelMetadata(model any) (*ModelMetadata, error) {
 		} else if fieldType == reflect.TypeOf(time.Time{}) {
 			meta.Fields[fieldTagVal] = NewFieldDateMedata(fieldID, fieldTagVal, FieldTypeDatetime)
 		} else {
-			switch ParseFieldType(fieldType.Name()) {
+			switch ParseReflectFieldType(fieldType) {
+			case FieldTypeArray:
+				meta.Fields[fieldTagVal] = NewFieldArrayMetadata(fieldID, fieldTagVal)
+
 			case FieldTypeBool:
 				// no constraints
 				meta.Fields[fieldTagVal] = NewFieldBoolMedata(fieldID, fieldTagVal)

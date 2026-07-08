@@ -1,7 +1,6 @@
 package modelbind
 
 import (
-	"encoding/json"
 	"reflect"
 
 	"github.com/dronm/modelbind/metadata"
@@ -195,29 +194,13 @@ func bindInsertModelInput[T any](funcName string, input ModelInput[T], dbInsert 
 			continue
 		}
 
-		if fieldMd.DataType() == metadata.FieldTypeUndefined {
-			if isNilReflectValue(field) {
-				dbInsert.AddField(fieldID, nil)
-				continue
-			}
-
-			b, err := json.Marshal(field.Interface())
-			if err != nil {
-				validationErr.Add(NewMessageError(
-					MsgJSONMarshalFailed,
-					map[string]any{
-						"Func":  funcName,
-						"Field": fieldID,
-						"Error": err.Error(),
-					},
-				))
-				continue
-			}
-
-			dbInsert.AddField(fieldID, b)
-		} else {
-			dbInsert.AddField(fieldID, field.Interface())
+		value, err := dbFieldValue(funcName, fieldID, field, fieldMd)
+		if err != nil {
+			validationErr.Add(err)
+			continue
 		}
+
+		dbInsert.AddField(fieldID, value)
 	}
 
 	if validationErr.HasErrors() {
@@ -309,29 +292,13 @@ func bindUpdateModelInput[T any](funcName string, keyModel any, input ModelInput
 			continue
 		}
 
-		if fieldMd.DataType() == metadata.FieldTypeUndefined {
-			if isNilReflectValue(field) {
-				dbUpdate.AddField(fieldID, nil)
-				continue
-			}
-
-			b, err := json.Marshal(field.Interface())
-			if err != nil {
-				validationErr.Add(NewMessageError(
-					MsgJSONMarshalFailed,
-					map[string]any{
-						"Func":  funcName,
-						"Field": fieldID,
-						"Error": err.Error(),
-					},
-				))
-				continue
-			}
-
-			dbUpdate.AddField(fieldID, b)
-		} else {
-			dbUpdate.AddField(fieldID, field.Interface())
+		value, err := dbFieldValue(funcName, fieldID, field, fieldMd)
+		if err != nil {
+			validationErr.Add(err)
+			continue
 		}
+
+		dbUpdate.AddField(fieldID, value)
 	}
 
 	if validationErr.HasErrors() {
