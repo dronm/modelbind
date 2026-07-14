@@ -54,12 +54,12 @@ func NewModelMetadata(model any) (*ModelMetadata, error) {
 	for i := 0; i < modelType.NumField(); i++ {
 		field := modelType.Field(i)
 		fieldID := field.Name
-		fieldTagVal := field.Tag.Get(FieldAnnotationName)
+		fieldTagVal := FieldAnnotationValue(field, FieldAnnotationName)
 
 		// Skip fields without a FieldFilterAnnotationName tag
 		if fieldTagVal == "-" || fieldTagVal == "" {
 			// check filter tag
-			fieldTagVal = field.Tag.Get(FieldFilterAnnotationName)
+			fieldTagVal = FieldAnnotationValue(field, FieldFilterAnnotationName)
 			if fieldTagVal == "-" || fieldTagVal == "" {
 				continue
 			}

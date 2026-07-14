@@ -11,12 +11,12 @@ import (
 )
 
 type testInputModel struct {
-	ID        *int       `json:"id" primaryKey:""`
-	Name      *string    `json:"name" alias:"Name"`
-	Age       *int       `json:"age" alias:"Age" required:"" min:"18"`
-	Active    *bool      `json:"active"`
-	BirthDate *time.Time `json:"birth_date" dateType:"date"`
-	Ignored   *string    `json:"-"`
+	ID        *int       `json:"id,omitempty" primaryKey:""`
+	Name      *string    `json:"name,omitempty" alias:"Name"`
+	Age       *int       `json:"age,omitempty" alias:"Age" required:"" min:"18"`
+	Active    *bool      `json:"active,omitempty"`
+	BirthDate *time.Time `json:"birth_date,omitempty" dateType:"date"`
+	Ignored   *string    `json:"-,omitempty"`
 }
 
 func (m *testInputModel) Relation() string {
@@ -24,7 +24,7 @@ func (m *testInputModel) Relation() string {
 }
 
 type testInputKeyModel struct {
-	ID *int `json:"id"`
+	ID *int `json:"id,omitempty"`
 }
 
 func (m *testInputKeyModel) Relation() string {

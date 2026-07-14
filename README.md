@@ -45,7 +45,7 @@ Common tags:
 
 | Tag | Meaning |
 | --- | --- |
-| `json:"name"` | Public field/database column name. |
+| `json:"name"`, `json:"name,omitempty"` | Public field/database column name. Standard JSON options after the first comma are ignored by modelbind. |
 | `alias:"Name"` | Human-readable name for validation messages. |
 | `required:""` | Value must be present and non-null. |
 | `min:"..."`, `max:"..."`, `fix:"..."` | Text length or numeric constraints. |

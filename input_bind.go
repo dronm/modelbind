@@ -41,7 +41,7 @@ func validateModelInput[T any](funcName string, input ModelInput[T], forInsert b
 	validationErr := &ValidationError{}
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}
@@ -125,7 +125,7 @@ func bindInsertModelInput[T any](funcName string, input ModelInput[T], dbInsert 
 	validationErr := &ValidationError{}
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}
@@ -237,7 +237,7 @@ func bindUpdateModelInput[T any](funcName string, keyModel any, input ModelInput
 	validationErr := &ValidationError{}
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}

@@ -12,10 +12,10 @@ type testDefaultName string
 const testDefaultNameRus testDefaultName = "rus"
 
 type testDBValueModel struct {
-	ID          int             `json:"id" primaryKey:"" srvCalc:""`
-	DefaultName testDefaultName `json:"default_name" required:""`
-	SeriesCodes []string        `json:"series_codes" required:""`
-	Payload     map[string]any  `json:"payload"`
+	ID          int             `json:"id,omitempty" primaryKey:"" srvCalc:""`
+	DefaultName testDefaultName `json:"default_name,omitempty" required:""`
+	SeriesCodes []string        `json:"series_codes,omitempty" required:""`
+	Payload     map[string]any  `json:"payload,omitempty"`
 }
 
 func (m *testDBValueModel) Relation() string {

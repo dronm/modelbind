@@ -425,9 +425,44 @@ func TestFieldDateMetadataValidate(t *testing.T) {
 	})
 }
 
+func TestFieldAnnotationValue(t *testing.T) {
+	type model struct {
+		Name       string `json:"name,omitempty,string"`
+		Ignored    string `json:"-,omitempty"`
+		EmptyName  string `json:",omitempty"`
+		CustomName string `db:"custom,column"`
+	}
+
+	modelType := reflect.TypeOf(model{})
+
+	tests := []struct {
+		fieldName string
+		tagName   string
+		want      string
+	}{
+		{fieldName: "Name", tagName: "json", want: "name"},
+		{fieldName: "Ignored", tagName: "json", want: "-"},
+		{fieldName: "EmptyName", tagName: "json", want: ""},
+		{fieldName: "CustomName", tagName: "db", want: "custom,column"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.fieldName+"/"+test.tagName, func(t *testing.T) {
+			field, ok := modelType.FieldByName(test.fieldName)
+			if !ok {
+				t.Fatalf("field %q not found", test.fieldName)
+			}
+
+			if got := FieldAnnotationValue(field, test.tagName); got != test.want {
+				t.Fatalf("FieldAnnotationValue() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestNewModelMetadata(t *testing.T) {
 	type product struct {
-		Name string `json:"name" alias:"Product name" required:"" max:"10" min:"2" role:"public"`
+		Name string `json:"name,omitempty" alias:"Product name" required:"" max:"10" min:"2" role:"public"`
 		Age  int64  `json:"age" min:"18" max:"99"`
 		Skip string `json:"-"`
 	}
@@ -447,6 +482,14 @@ func TestNewModelMetadata(t *testing.T) {
 
 	if _, ok := meta.Fields["name"]; !ok {
 		t.Fatal("expected name field metadata")
+	}
+
+	if _, ok := meta.Fields["name,omitempty"]; ok {
+		t.Fatal("did not expect JSON options in metadata field name")
+	}
+
+	if len(meta.FieldTagList) == 0 || meta.FieldTagList[0] != "name" {
+		t.Fatalf("FieldTagList = %#v, want first field name %q", meta.FieldTagList, "name")
 	}
 
 	nameField := meta.Fields["name"]

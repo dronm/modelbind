@@ -29,11 +29,11 @@ var ValListSeparator = ","
 // All possible annotations.
 const (
 	// common
-	AnnotTagAlias       = "alias"
-	AnnotTagRequired    = "required"
+	AnnotTagAlias      = "alias"
+	AnnotTagRequired   = "required"
 	AnnotTagDBRequired = "dbRequired" // required for Database, can be set with trigger/autoinc
 	AnnotTagPrimKey    = "primaryKey"
-	AnnotTagSrvCalc    = "srvCalc" // server initialized field on insert
+	AnnotTagSrvCalc    = "srvCalc"  // server initialized field on insert
 	AnnotTagDateType   = "dateType" // date, time, datetime, datetime_tz
 
 	//
@@ -58,6 +58,21 @@ const (
 func annotationTagBoolVal(fieldType reflect.StructField, tagName string) bool {
 	_, present := fieldType.Tag.Lookup(tagName)
 	return present
+}
+
+// FieldAnnotationValue returns the field name stored in the requested struct
+// tag. JSON encoding options such as omitempty and string are removed from the
+// returned value.
+//
+// An empty JSON field name remains empty. modelbind therefore keeps its
+// existing explicit-annotation behavior for tags such as json:",omitempty".
+func FieldAnnotationValue(fieldType reflect.StructField, tagName string) string {
+	tagVal := fieldType.Tag.Get(tagName)
+	if tagName == "json" {
+		tagVal, _, _ = strings.Cut(tagVal, ",")
+	}
+
+	return tagVal
 }
 
 func annotationTagStringVal(fieldType reflect.StructField, tagName string) string {

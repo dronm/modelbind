@@ -96,7 +96,7 @@ func ModelToDBFilters(model any, filters types.DBFilters, operator types.SQLFilt
 
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}
@@ -144,7 +144,7 @@ func bindUpdateModel(funcName string, keyModel any, dbUpdate types.DBUpdater) er
 	validationErr := &ValidationError{}
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}
@@ -242,7 +242,7 @@ func bindCollectionSelectModel(funcName string, dbSelect types.DBSelecter, param
 
 		for i := 0; i < aggModelVal.NumField(); i++ {
 			aggFieldType := aggModelType.Field(i)
-			fieldID := aggFieldType.Tag.Get(metadata.FieldAnnotationName)
+			fieldID := metadata.FieldAnnotationValue(aggFieldType, metadata.FieldAnnotationName)
 			if fieldID == "-" || fieldID == "" {
 				return NewMessageError(
 					MsgAggregationFieldNotDefined,
@@ -290,7 +290,7 @@ func bindSelectModel(funcName string, selectModel types.PrepareModel, model any)
 
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}
@@ -351,7 +351,7 @@ func bindInsertModel(funcName string, dbInsert types.DBInserter) error {
 	validationErr := &ValidationError{}
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}
@@ -452,7 +452,7 @@ func ValidateModel(model any, forInsert bool) error {
 	validationErr := &ValidationError{}
 	for i := 0; i < modelVal.NumField(); i++ {
 		fieldType := modelType.Field(i)
-		fieldID := fieldType.Tag.Get(metadata.FieldAnnotationName)
+		fieldID := metadata.FieldAnnotationValue(fieldType, metadata.FieldAnnotationName)
 		if fieldID == "-" || fieldID == "" {
 			continue
 		}
