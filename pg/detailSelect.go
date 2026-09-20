@@ -8,6 +8,8 @@ import (
 )
 
 type PgDetailSelect struct {
+	policy      *boundPolicy
+	request     *boundPredicate
 	model       types.DBModel
 	filter      *PgFilters
 	fieldIds    []string
@@ -48,13 +50,15 @@ func (s *PgDetailSelect) AddField(id string, val any) {
 }
 
 func (s PgDetailSelect) SQL(queryParams *[]any) string {
-	var filterSQL string
-	if s.filter != nil {
-		filterSQL = s.filter.SQL(queryParams)
-	}
-	return fmt.Sprintf("SELECT %s FROM %s%s",
-		strings.Join(s.fieldIds, ","),
-		s.model.Relation(),
-		filterSQL,
-	)
+	return mustSQL(s.BuildSQL(queryParams))
+}
+
+func (s PgDetailSelect) BuildSQL(queryParams *[]any) (string, error) {
+	return buildStatement(queryParams, func(params *[]any) (string, error) {
+		filterSQL, err := scopedWhere(s.filter, s.request, s.policy, params)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(s.fieldIds, ","), s.model.Relation(), filterSQL), nil
+	})
 }

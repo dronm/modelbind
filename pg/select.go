@@ -8,6 +8,8 @@ import (
 )
 
 type PgSelect struct {
+	policy         *boundPolicy
+	request        *boundPredicate
 	model          types.DBAggModel
 	filter         *PgFilters
 	sorter         *PgSorters
@@ -67,58 +69,59 @@ func (s *PgSelect) AddAggField(fn string, val any) {
 	s.aggFieldValues = append(s.aggFieldValues, val)
 }
 
+// SQL preserves the legacy API and panics on build errors. Prefer BuildSQL for
+// policy-aware code so authorization/configuration failures can be handled.
 func (s PgSelect) SQL(queryParams *[]any) string {
-	var filterSQL string
-	if s.filter != nil {
-		filterSQL = s.filter.SQL(queryParams)
-	}
-	var sorterSQL string
-	if s.sorter != nil {
-		sorterSQL = s.sorter.SQL()
-	}
-	var limitSQL string
-	if s.limit != nil {
-		limitSQL = s.limit.SQL()
-	}
-	return fmt.Sprintf("SELECT %s FROM %s%s%s%s",
-		strings.Join(s.fieldIds, ","),
-		s.model.Relation(),
-		filterSQL,
-		sorterSQL,
-		limitSQL,
-	)
+	return mustSQL(s.BuildSQL(queryParams))
 }
 
-// CollectionSQL returns two queries: collecion query and aggregation query.
-func (s PgSelect) CollectionSQL(queryParams *[]any) (string, string) {
-	var filterSQL string
-	if s.filter != nil {
-		filterSQL = s.filter.SQL(queryParams)
-	}
-	var sorterSQL string
+func (s PgSelect) BuildSQL(queryParams *[]any) (string, error) {
+	return buildStatement(queryParams, func(params *[]any) (string, error) {
+		filterSQL, err := scopedWhere(s.filter, s.request, s.policy, params)
+		if err != nil {
+			return "", err
+		}
+		return s.selectSQL(filterSQL), nil
+	})
+}
+
+func (s PgSelect) selectSQL(filterSQL string) string {
+	var sorterSQL, limitSQL string
 	if s.sorter != nil {
 		sorterSQL = s.sorter.SQL()
 	}
-	var limitSQL string
 	if s.limit != nil {
 		limitSQL = s.limit.SQL()
 	}
-
-	totQuery := ""
-	if len(s.aggFields) > 0 {
-		totQuery = fmt.Sprintf("SELECT %s FROM %s%s",
-			strings.Join(s.aggFields, ","),
-			s.model.Relation(),
-			filterSQL,
-		)
-	}
-
 	return fmt.Sprintf("SELECT %s FROM %s%s%s%s",
-			strings.Join(s.fieldIds, ","),
-			s.model.Relation(),
-			filterSQL,
-			sorterSQL,
-			limitSQL,
-		),
-		totQuery
+		strings.Join(s.fieldIds, ","), s.model.Relation(), filterSQL, sorterSQL, limitSQL)
+}
+
+// CollectionSQL returns list and aggregate queries sharing the same parameters.
+func (s PgSelect) CollectionSQL(queryParams *[]any) (string, string) {
+	query, aggregate, err := s.BuildCollectionSQL(queryParams)
+	if err != nil {
+		panic(err)
+	}
+	return query, aggregate
+}
+
+// BuildCollectionSQL applies the identical row scope to data and totals. Policy
+// parameters are allocated once, not separately for the aggregate query.
+func (s PgSelect) BuildCollectionSQL(queryParams *[]any) (string, string, error) {
+	aggregate := ""
+	query, err := buildStatement(queryParams, func(params *[]any) (string, error) {
+		filterSQL, err := scopedWhere(s.filter, s.request, s.policy, params)
+		if err != nil {
+			return "", err
+		}
+		if len(s.aggFields) > 0 {
+			aggregate = fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(s.aggFields, ","), s.model.Relation(), filterSQL)
+		}
+		return s.selectSQL(filterSQL), nil
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return query, aggregate, nil
 }

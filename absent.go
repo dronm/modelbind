@@ -77,3 +77,22 @@ func (in ModelInput[T]) IsPresent(field string) bool {
 func (in ModelInput[T]) Validate(forInsert bool) error {
 	return ValidateModelInput(in, forInsert)
 }
+
+// SetPresent removes a field from the absent set, for example after applying a
+// trusted server value. It does not change whether this set tracks presence.
+func (s *AbsentFieldSet) SetPresent(field string) {
+	delete(s.fields, field)
+}
+
+// Clone returns an independent presence set, preserving its tracked/untracked
+// state. Use it when constructing effective input without mutating the request.
+func (s AbsentFieldSet) Clone() AbsentFieldSet {
+	if !s.IsTracked() {
+		return AbsentFieldSet{}
+	}
+	result := NewAbsentFieldSet()
+	for field := range s.fields {
+		result.SetAbsent(field)
+	}
+	return result
+}

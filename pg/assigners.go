@@ -31,3 +31,29 @@ func (a *PgAssigners) Add(fieldID string, value any) {
 func (a PgAssigners) Len() int {
 	return len(a)
 }
+
+// Set replaces a column assignment while preserving its position and removing
+// duplicate entries. Only unqualified write columns are accepted.
+func (a *PgAssigners) Set(fieldID string, value any) error {
+	column, err := writeColumn(fieldID)
+	if err != nil {
+		return err
+	}
+	result := make(PgAssigners, 0, len(*a)+1)
+	replaced := false
+	for _, assignment := range *a {
+		if strings.EqualFold(strings.TrimSpace(assignment.fieldID), column) {
+			if !replaced {
+				result = append(result, PgAssigner{fieldID: column, value: value})
+				replaced = true
+			}
+			continue
+		}
+		result = append(result, assignment)
+	}
+	if !replaced {
+		result = append(result, PgAssigner{fieldID: column, value: value})
+	}
+	*a = result
+	return nil
+}

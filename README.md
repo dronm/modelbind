@@ -53,7 +53,7 @@ Common tags:
 | `srvCalc:""` | Server/database-calculated field. Used as `RETURNING` on insert. |
 | `dateType:"date"` | Date/time mode: `date`, `time`, `datetime`, `datetime_tz`. |
 | `enum:"status"` | Validate against `metadata.Enums["status"]`. |
-| `valList:"a@@b"` | Validate against an inline list. Separator is `metadata.ValListSeparator`. |
+| `valList:"a,b"` | Validate against an inline list. Separator is `metadata.ValListSeparator` (comma by default). |
 
 ## Decode request input
 
@@ -218,7 +218,7 @@ params := modelbind.CollectionParams{
 	Count: 20,
 }
 
-selecter := pg.NewPgSelect(&UserListModel{})
+selecter := pg.NewPgSelect(&UserListModel{}, &pg.PgFilters{}, &pg.PgSorters{}, pg.NewPgLimit(0, 20))
 if err := modelbind.BindCollectionSelectModel(selecter, params); err != nil {
 	return err
 }
@@ -257,4 +257,15 @@ func initModelbind() {
 - Use pointer fields for nullable input values.
 - Use `ModelInput.AbsentFields` to distinguish absent fields from explicit `null`.
 - Keep insert and update flows separate: inserts usually require all required fields, updates usually skip absent fields.
-- SQL builders validate field and relation names before rendering SQL.
+- SQL builders validate field references in filters/assignments. Relation strings, projections, aggregate expressions, and legacy raw expressions remain trusted application SQL; never source them from a request.
+
+## Server-enforced access policies
+
+The optional `access` package and policy-aware PostgreSQL builders support grouped
+row scopes and distinct insert/update write rules. Existing APIs remain available;
+user/role resolution and automatic `webapp` integration are separate work.
+
+See [Resolved access policies](docs/ACCESS_POLICIES.md) for read/detail/totals,
+insert defaults/enforced values, immutable fields, membership rules, composite-key
+deletes, typed input preparation, fail-closed error handling, and integration
+boundaries. See [Implementation notes](docs/IMPLEMENTATION_NOTES.md) for validation.

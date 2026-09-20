@@ -13,6 +13,7 @@ type PgField struct {
 }
 
 type PgInsert struct {
+	policy         *boundPolicy
 	model          types.DBModel
 	values         []any
 	fields         []PgField
@@ -58,33 +59,59 @@ func (s PgInsert) InsertFieldLen() int {
 }
 
 func (s PgInsert) SQL(queryParams *[]any) string {
-	paramInd := len(*queryParams)
-	var fieldIds strings.Builder
-	var fieldVals strings.Builder
-	for _, field := range s.fields {
-		if fieldIds.Len() > 0 {
-			fieldIds.WriteString(",")
-			fieldVals.WriteString(",")
-		}
-		paramInd++
-		fieldVals.WriteString(fmt.Sprintf("$%d", paramInd))
-		safeFieldID, err := sanitizeSQLFieldRef(field.ID)
+	return mustSQL(s.BuildSQL(queryParams))
+}
+
+func (s PgInsert) BuildSQL(queryParams *[]any) (string, error) {
+	return buildStatement(queryParams, func(params *[]any) (string, error) {
+		fields, err := effectiveFields(s.fields, s.policy)
 		if err != nil {
-			panic(err)
+			return "", err
 		}
-		fieldIds.WriteString(safeFieldID)
-		*queryParams = append(*queryParams, field.Value)
-	}
+		var fieldIDs, fieldValues []string
+		for _, field := range fields {
+			safe, err := sanitizeSQLFieldRef(field.ID)
+			if err != nil {
+				return "", err
+			}
+			fieldIDs = append(fieldIDs, safe)
+			*params = append(*params, field.Value)
+			fieldValues = append(fieldValues, fmt.Sprintf("$%d", len(*params)))
+		}
+		returning := ""
+		if len(s.retFieldIds) > 0 {
+			returning = " RETURNING " + joinSafeFieldRefs(s.retFieldIds)
+		}
+		if s.policy != nil && len(fields) == 0 {
+			return "INSERT INTO " + s.model.Relation() + " DEFAULT VALUES" + returning, nil
+		}
+		return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)%s",
+			s.model.Relation(), strings.Join(fieldIDs, ","), strings.Join(fieldValues, ","), returning), nil
+	})
+}
 
-	retFields := ""
-	if len(s.retFieldIds) > 0 {
-		retFields = " RETURNING " + joinSafeFieldRefs(s.retFieldIds)
+// SetField replaces an existing column in place and removes duplicate entries.
+// AddField retains its legacy append semantics. Policy checks run at build time.
+func (s *PgInsert) SetField(id string, value any) error {
+	column, err := writeColumn(id)
+	if err != nil {
+		return err
 	}
-
-	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)%s",
-		s.model.Relation(),
-		fieldIds.String(),
-		fieldVals.String(),
-		retFields,
-	)
+	result := make([]PgField, 0, len(s.fields)+1)
+	replaced := false
+	for _, field := range s.fields {
+		if strings.EqualFold(strings.TrimSpace(field.ID), column) {
+			if !replaced {
+				result = append(result, PgField{ID: column, Value: value})
+				replaced = true
+			}
+			continue
+		}
+		result = append(result, field)
+	}
+	if !replaced {
+		result = append(result, PgField{ID: column, Value: value})
+	}
+	s.fields = result
+	return nil
 }
