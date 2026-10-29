@@ -269,3 +269,10 @@ See [Resolved access policies](docs/ACCESS_POLICIES.md) for read/detail/totals,
 insert defaults/enforced values, immutable fields, membership rules, composite-key
 deletes, typed input preparation, fail-closed error handling, and integration
 boundaries. See [Implementation notes](docs/IMPLEMENTATION_NOTES.md) for validation.
+
+## Grouped collection filters (opt-in)
+
+Nested client `where` conditions are available through additive request and binding
+APIs. Existing filters and APIs keep their behavior. See
+[Grouped collection filters](docs/GROUPED_FILTERS.md) for application opt-in,
+compound date-and-ID cursor requests, search composition, and tests.
